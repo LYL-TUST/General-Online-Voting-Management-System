@@ -6,11 +6,7 @@
         <div class="sidebar__brand-row">
           <div class="sidebar__brand-text">
             <h1 v-if="!store.sidebarCollapsed">会议投票系统</h1>
-            <p v-if="!store.sidebarCollapsed">Vue3 + Vite + Pinia + Router + Element Plus</p>
           </div>
-          <button class="sidebar__toggle" type="button" @click="store.toggleSidebar()" aria-label="切换侧边栏">
-            <span class="sidebar__toggle-icon" :class="{ 'is-collapsed': store.sidebarCollapsed }">❮</span>
-          </button>
         </div>
       </div>
       <div class="sidebar__menu">

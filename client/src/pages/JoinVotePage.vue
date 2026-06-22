@@ -9,7 +9,6 @@
         <el-input v-model.trim="voteId" placeholder="请输入投票 ID" style="max-width: 320px" />
         <el-button type="primary" :loading="loading" @click="loadVote">查询投票</el-button>
       </div>
-      <p class="muted">查询成功后可直接投票，投票后按钮会置灰。</p>
     </section>
 
     <section v-if="!vote" class="page-card">

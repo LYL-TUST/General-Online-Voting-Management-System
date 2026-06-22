@@ -3,7 +3,6 @@
     <section class="page-card">
       <div class="section-title">
         <h2>发起投票</h2>
-        <el-button type="primary" plain @click="showExample">查看示例</el-button>
       </div>
       <VoteCreateForm @submit="handleSubmit" />
     </section>
@@ -47,5 +46,4 @@ const handleSubmit = async (form) => {
 };
 
 const goDetail = () => router.push(`/vote/${createdVoteId.value}`);
-const showExample = () => ElMessage.info('请输入会议主题与3个候选时间后提交。');
 </script>
