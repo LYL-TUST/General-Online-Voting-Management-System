@@ -31,13 +31,6 @@
     <EmptyState v-if="!vote" title="暂无排行数据" description="点击上方事件列表，或输入投票 ID 加载对应投票数据。" />
 
     <template v-else>
-      <section class="page-card">
-        <div class="rank-grid">
-          <el-card shadow="never"><div class="muted">总参与人数</div><div style="font-size: 32px; font-weight: 700; margin-top: 6px;">{{ vote.participants }}</div></el-card>
-          <el-card shadow="never"><div class="muted">投票主题</div><div style="font-size: 18px; font-weight: 600; margin-top: 6px;">{{ vote.topic }}</div></el-card>
-        </div>
-      </section>
-
       <VoteRankChart :vote="vote" :active-option-id="activeEventId" />
       <VoteRankList :vote="vote" />
     </template>
