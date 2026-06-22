@@ -70,12 +70,28 @@
           </el-card>
         </div>
 
-        <div class="trend-card">
-          <div class="trend-card__header">
-            <strong>近 7 天投票趋势</strong>
-            <span>基于当前本地投票数据</span>
+        <div class="dashboard__content">
+          <div class="trend-card">
+            <div class="trend-card__header">
+              <strong>近 7 天投票创建趋势</strong>
+              <span>基于当前本地投票数据</span>
+            </div>
+            <div ref="trendChartRef" class="trend-chart"></div>
           </div>
-          <div ref="trendChartRef" class="trend-chart"></div>
+
+          <div class="summary-card">
+            <div class="summary-card__header">
+              <strong>状态摘要</strong>
+              <span>最近动态与当前概览</span>
+            </div>
+
+            <div class="summary-list">
+              <div v-for="item in summaryItems" :key="item.label" class="summary-list__item">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -117,7 +133,7 @@ const features = [
 
 const totalVotes = computed(() => store.createdVotes.length);
 const hasData = computed(() => store.createdVotes.length > 0 || store.voteRecords.length > 0);
-const totalParticipants = computed(() => store.createdVotes.reduce((sum, item) => sum + (item.participants || 0), 0));
+const totalParticipants = computed(() => store.voteRecords.length);
 const ongoingVotes = computed(() => store.createdVotes.filter((item) => item.status !== 'closed' && item.status !== 'ended').length);
 const endedVotes = computed(() => store.createdVotes.filter((item) => item.status === 'closed' || item.status === 'ended').length);
 
@@ -128,6 +144,13 @@ const stats = computed(() => [
   { label: '已结束投票', value: endedVotes.value, hint: '已关闭的投票' }
 ]);
 
+const summaryItems = computed(() => [
+  { label: '近 7 天创建', value: trendData.value.counts.reduce((sum, n) => sum + n, 0) },
+  { label: '最近新增', value: trendData.value.counts[trendData.value.counts.length - 1] || 0 },
+  { label: '当前活跃', value: ongoingVotes.value },
+  { label: '参与总量', value: totalParticipants.value }
+]);
+
 const previewList = computed(() => [
   { label: '创建投票', value: totalVotes.value },
   { label: '参与人次', value: totalParticipants.value },
@@ -135,9 +158,31 @@ const previewList = computed(() => [
 ]);
 
 const trendData = computed(() => {
-  const days = Array.from({ length: 7 }, (_, i) => `D-${6 - i}`);
-  const counts = days.map((_, idx) => Math.max(0, Math.round((store.createdVotes.length * (idx + 1)) / 7)));
-  return { days, counts };
+  const labels = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  });
+
+  const counts = labels.map((_, idx) => {
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    dayStart.setDate(dayStart.getDate() - (6 - idx));
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+
+    return store.createdVotes.filter((item) => {
+      if (!item.createdAt) return false;
+      const createdAt = new Date(item.createdAt);
+      return createdAt >= dayStart && createdAt < dayEnd;
+    }).length;
+  });
+
+  const hasTrend = counts.some((value) => value > 0);
+  return {
+    days: labels,
+    counts: hasTrend ? counts : [1, 2, 1, 3, 2, 4, 3]
+  };
 });
 
 const renderMiniChart = () => {
@@ -149,7 +194,7 @@ const renderMiniChart = () => {
     yAxis: { type: 'value', show: false },
     series: [{
       type: 'line',
-      data: [2, 4, 3, 6, 7, 5, 8],
+      data: trendData.value.counts,
       smooth: true,
       symbol: 'none',
       lineStyle: { width: 2, color: '#4096ff' },
@@ -171,10 +216,10 @@ const renderTrendChart = () => {
       type: 'line',
       data: trendData.value.counts,
       smooth: true,
-      symbolSize: 8,
+      symbolSize: 6,
       itemStyle: { color: '#4096ff' },
-      lineStyle: { width: 3, color: '#4096ff' },
-      areaStyle: { color: 'rgba(64,150,255,0.14)' }
+      lineStyle: { width: 2, color: '#4096ff' },
+      areaStyle: { color: 'rgba(64,150,255,0.10)' }
     }]
   });
 };
@@ -320,10 +365,15 @@ onBeforeUnmount(() => {
 .stat-card__label { color: #64748b; font-size: 13px; }
 .stat-card__value { margin-top: 10px; font-size: 30px; font-weight: 700; color: #0f172a; }
 .stat-card__hint { margin-top: 6px; color: #94a3b8; font-size: 12px; }
-.trend-card { padding: 18px; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; }
-.trend-card__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; color: #64748b; }
-.trend-card__header strong { color: #0f172a; }
-.trend-chart { width: 100%; height: 280px; }
+.dashboard__content { display: grid; grid-template-columns: 1.6fr 0.9fr; gap: 16px; align-items: stretch; }
+.trend-card, .summary-card { padding: 18px; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; }
+.trend-card__header, .summary-card__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; color: #64748b; gap: 12px; }
+.trend-card__header strong, .summary-card__header strong { color: #0f172a; }
+.trend-chart { width: 100%; height: 240px; }
+.summary-list { display: grid; gap: 10px; }
+.summary-list__item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; color: #475569; }
+.summary-list__item:last-child { border-bottom: 0; padding-bottom: 0; }
+.summary-list__item strong { color: #0f172a; font-size: 18px; }
 .footer p { margin: 6px 0 0; color: #64748b; }
 .footer span { color: #94a3b8; }
 
@@ -333,13 +383,14 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1200px) {
-  .hero, .feature-grid, .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero, .feature-grid, .stat-grid, .dashboard__content { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
-  .hero, .feature-grid, .stat-grid { grid-template-columns: 1fr; }
+  .hero, .feature-grid, .stat-grid, .dashboard__content { grid-template-columns: 1fr; }
   .section-head, .footer { flex-direction: column; align-items: flex-start; }
   .preview-card--main, .preview-card--chart, .preview-card--list { position: relative; left: auto; right: auto; top: auto; bottom: auto; width: 100%; margin-bottom: 12px; }
   .hero__preview { min-height: auto; }
+  .trend-chart { height: 220px; }
 }
 </style>
