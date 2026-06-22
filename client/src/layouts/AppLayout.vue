@@ -3,8 +3,15 @@
     <LoadingMask :loading="store.loading" />
     <aside class="sidebar" :class="{ 'is-collapsed': store.sidebarCollapsed }">
       <div class="sidebar__brand">
-        <h1 v-if="!store.sidebarCollapsed">会议投票系统</h1>
-        <p v-if="!store.sidebarCollapsed">Vue3 + Vite + Pinia + Router + Element Plus</p>
+        <div class="sidebar__brand-row">
+          <div class="sidebar__brand-text">
+            <h1 v-if="!store.sidebarCollapsed">会议投票系统</h1>
+            <p v-if="!store.sidebarCollapsed">Vue3 + Vite + Pinia + Router + Element Plus</p>
+          </div>
+          <button class="sidebar__toggle" type="button" @click="store.toggleSidebar()" aria-label="切换侧边栏">
+            <span class="sidebar__toggle-icon" :class="{ 'is-collapsed': store.sidebarCollapsed }">❮</span>
+          </button>
+        </div>
       </div>
       <div class="sidebar__menu">
         <div class="sidebar__group-title">核心功能菜单</div>
@@ -15,8 +22,10 @@
             :to="item.path"
             class="sidebar__item"
             :class="{ 'is-active': route.name === item.name }"
+            :title="store.sidebarCollapsed ? item.label : ''"
           >
-            <span v-if="!store.sidebarCollapsed" class="sidebar__label">{{ item.label }}</span>
+            <span class="sidebar__icon">{{ item.icon }}</span>
+            <span class="sidebar__label">{{ item.label }}</span>
           </RouterLink>
         </nav>
 
@@ -28,13 +37,12 @@
             :to="item.path"
             class="sidebar__item"
             :class="{ 'is-active': route.name === item.name }"
+            :title="store.sidebarCollapsed ? item.label : ''"
           >
-            <span v-if="!store.sidebarCollapsed" class="sidebar__label">{{ item.label }}</span>
+            <span class="sidebar__icon">{{ item.icon }}</span>
+            <span class="sidebar__label">{{ item.label }}</span>
           </RouterLink>
         </nav>
-      </div>
-      <div class="sidebar__footer">
-        <el-button size="small" @click="store.toggleSidebar()">{{ store.sidebarCollapsed ? '展开' : '收起' }}</el-button>
       </div>
     </aside>
 
@@ -70,14 +78,14 @@ const route = useRoute();
 const store = useAppStore();
 
 const coreMenus = [
-  { name: 'create', path: '/create', label: '发起投票' },
-  { name: 'join', path: '/join', label: '参与投票' },
-  { name: 'rank', path: '/rank', label: '投票结果排行' }
+  { name: 'create', path: '/create', label: '发起投票', icon: '📝' },
+  { name: 'join', path: '/join', label: '参与投票', icon: '🧑‍🤝‍🧑' },
+  { name: 'rank', path: '/rank', label: '投票结果排行', icon: '📊' }
 ];
 const extraMenus = [
-  { name: 'my-created', path: '/my-created', label: '我创建的投票' },
-  { name: 'my-records', path: '/my-records', label: '我的投票记录' },
-  { name: 'guide', path: '/guide', label: '使用说明' }
+  { name: 'my-created', path: '/my-created', label: '我创建的投票', icon: '📁' },
+  { name: 'my-records', path: '/my-records', label: '我的投票记录', icon: '🧾' },
+  { name: 'guide', path: '/guide', label: '使用说明', icon: 'ℹ️' }
 ];
 
 const currentTitle = computed(() => {
