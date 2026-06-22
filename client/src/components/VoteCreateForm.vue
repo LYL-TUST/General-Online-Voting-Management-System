@@ -7,9 +7,14 @@
             <h3>提交前预检查面板</h3>
             <p>先看清楚哪些信息没填、哪些选项有重复，避免提交后再返工</p>
           </div>
-          <el-tag :type="precheckStatus.type" effect="light">{{ precheckStatus.label }}</el-tag>
+          <div class="precheck-type-hint">
+            <el-tag effect="light">{{ voteTypeMeta.label }}</el-tag>
+            <el-tag :type="precheckStatus.type" effect="light">{{ precheckStatus.label }}</el-tag>
+          </div>
         </div>
       </template>
+
+      <div class="precheck-intro">{{ voteTypeMeta.description }}</div>
 
       <div v-if="precheckIssues.length" class="issue-list">
         <div v-for="issue in precheckIssues" :key="issue.key" class="issue-item" :class="`issue-${issue.level}`">
@@ -77,26 +82,51 @@
             <h3>投票候选选项</h3>
             <p>{{ optionHint }}</p>
           </div>
+          <el-tag effect="plain">{{ optionModeHint }}</el-tag>
         </div>
       </template>
 
-      <transition-group name="slot-list" tag="div" class="slot-list">
-        <div v-for="(slot, index) in form.options" :key="slot.id" class="slot-row">
-          <div class="slot-main">
-            <el-form-item :label="`投票选项 ${index + 1}`" :prop="`options.${index}.label`" :rules="optionItemRules(index)" class="slot-item">
-              <el-input v-model="slot.label" maxlength="80" show-word-limit :placeholder="optionPlaceholder" />
-            </el-form-item>
+      <div class="options-scroll-shell" :class="{ 'is-scrollable': isOptionsScrollable }">
+        <transition-group name="slot-list" tag="div" class="slot-list">
+          <div v-for="(slot, index) in form.options" :key="slot.id" class="slot-row">
+            <div class="slot-main">
+              <el-form-item :label="optionLabel(index)" :prop="`options.${index}.label`" :rules="optionItemRules(index)" class="slot-item">
+                <el-input
+                  v-if="form.voteType !== 'time'"
+                  v-model="slot.label"
+                  maxlength="80"
+                  show-word-limit
+                  :placeholder="optionPlaceholder"
+                />
+                <div v-else class="time-input-row">
+                  <el-time-picker
+                    v-model="slot.timeValue"
+                    value-format="HH:mm"
+                    format="HH:mm"
+                    placeholder="选择时间"
+                    class="time-input-row__time"
+                  />
+                  <el-input
+                    v-model="slot.timeSuffix"
+                    maxlength="32"
+                    show-word-limit
+                    placeholder="例如：周六、11月20日、A 方案"
+                    class="time-input-row__suffix"
+                  />
+                </div>
+              </el-form-item>
 
-            <el-form-item label="补充备注" :prop="`options.${index}.note`" class="slot-item">
-              <el-input v-model="slot.note" maxlength="60" show-word-limit placeholder="例如：预算 5w、线下 302、方案 A" />
-            </el-form-item>
+              <el-form-item label="补充备注" :prop="`options.${index}.note`" class="slot-item">
+                <el-input v-model="slot.note" maxlength="60" show-word-limit placeholder="例如：预算 5w、线下 302、方案 A" />
+              </el-form-item>
+            </div>
+
+            <el-button circle text type="danger" :disabled="form.options.length === 1" @click="removeOption(index)">
+              <el-icon><Delete /></el-icon>
+            </el-button>
           </div>
-
-          <el-button circle text type="danger" :disabled="form.options.length === 1" @click="removeOption(index)">
-            <el-icon><Delete /></el-icon>
-          </el-button>
-        </div>
-      </transition-group>
+        </transition-group>
+      </div>
 
       <el-alert v-if="duplicateHint" :title="duplicateHint" type="error" show-icon :closable="false" style="margin-top: 12px" />
 
@@ -120,7 +150,7 @@ const emit = defineEmits(['submit', 'reset']);
 const formRef = ref();
 const uid = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-const createOption = () => ({ id: uid(), label: '', note: '' });
+const createOption = () => ({ id: uid(), label: '', note: '', timeValue: '', timeSuffix: '' });
 const form = reactive({
   title: '',
   description: '',
@@ -130,8 +160,15 @@ const form = reactive({
   options: [createOption(), createOption(), createOption()]
 });
 
+const voteTypeMeta = computed(() => ({
+  time: { label: '时间类投票', description: '使用时间选择器填写候选项，适合会议时间、活动档期、日期选择。' },
+  'text-single': { label: '文本选项单选', description: '直接填写文本候选项，适合地点、人选、方案等单一选择。' },
+  'text-multi': { label: '文本选项多选', description: '适合允许选多个候选项的场景，结果页会提示可选多个。' }
+})[form.voteType]);
+
+const optionModeHint = computed(() => (form.voteType === 'time' ? '时间输入模式' : form.voteType === 'text-multi' ? '多选候选模式' : '单选候选模式'));
 const optionPlaceholder = computed(() => {
-  if (form.voteType === 'time') return '例：周六 14:00、11月20日、活动档期 A';
+  if (form.voteType === 'time') return '输入时间描述，例如：周六上午、11月20日 14:00';
   return '例：方案 A、餐厅 B、张三、礼品套装';
 });
 
@@ -144,13 +181,20 @@ const optionHint = computed(() => {
   return map[form.voteType];
 });
 
+const optionLabel = (index) => (form.voteType === 'time' ? `时间候选 ${index + 1}` : `投票选项 ${index + 1}`);
+
+const buildOptionValue = (item) => {
+  if (form.voteType === 'time') return [item.timeValue, item.timeSuffix].filter(Boolean).join(' ').trim();
+  return item.label.trim();
+};
+
 const optionItemRules = (index) => [
   {
-    validator: (_rule, value, callback) => {
-      if (!String(value || '').trim()) return callback(new Error('投票选项不能为空'));
-      const normalized = form.options.map((item) => item.label.trim());
-      const key = normalized[index];
-      if (key && normalized.filter((item) => item === key).length > 1) return callback(new Error('投票选项存在重复，请修改'));
+    validator: (_rule, _value, callback) => {
+      const current = buildOptionValue(form.options[index]);
+      if (!current) return callback(new Error(form.voteType === 'time' ? '请选择时间或填写时间描述' : '投票选项不能为空'));
+      const normalized = form.options.map((item) => buildOptionValue(item));
+      if (current && normalized.filter((item) => item === current).length > 1) return callback(new Error('投票选项存在重复，请修改'));
       callback();
     },
     trigger: ['blur', 'change']
@@ -171,7 +215,7 @@ const rules = {
 const duplicateHint = computed(() => {
   const seen = new Set();
   for (const item of form.options) {
-    const key = item.label.trim();
+    const key = buildOptionValue(item);
     if (!key) continue;
     if (seen.has(key)) return `存在重复投票选项：${key}`;
     seen.add(key);
@@ -184,7 +228,7 @@ const missingFields = computed(() => {
   if (!form.title.trim()) list.push('投票标题');
   if (!form.voteType) list.push('投票类型');
   if (!form.participationRule) list.push('重复投票限制');
-  const emptyOptions = form.options.reduce((count, item) => count + (!item.label.trim() ? 1 : 0), 0);
+  const emptyOptions = form.options.reduce((count, item) => count + (!buildOptionValue(item) ? 1 : 0), 0);
   if (emptyOptions > 0) list.push(`还有 ${emptyOptions} 个投票选项未填写`);
   return list;
 });
@@ -227,6 +271,7 @@ const precheckStatus = computed(() => {
   return { type: 'success', label: '已通过' };
 });
 
+const isOptionsScrollable = computed(() => form.options.length > 3);
 const submitDisabled = computed(() => Boolean(missingFields.value.length || duplicateHint.value));
 
 watch(
@@ -266,7 +311,15 @@ const reset = () => {
 
 const submit = async () => {
   await formRef.value?.validate();
-  emit('submit', JSON.parse(JSON.stringify(form)));
+  const normalized = JSON.parse(JSON.stringify(form));
+  normalized.options = normalized.options.map((item) => ({
+    id: item.id,
+    label: form.voteType === 'time' ? buildOptionValue(item) : item.label.trim(),
+    note: item.note,
+    timeValue: item.timeValue,
+    timeSuffix: item.timeSuffix
+  }));
+  emit('submit', normalized);
 };
 
 defineExpose({ reset });
@@ -369,6 +422,30 @@ defineExpose({ reset });
   gap: 16px;
 }
 
+.options-scroll-shell {
+  max-height: none;
+  overflow: visible;
+}
+
+.options-scroll-shell.is-scrollable {
+  max-height: 460px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.options-scroll-shell.is-scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+
+.options-scroll-shell.is-scrollable::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.options-scroll-shell.is-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .slot-list {
   display: flex;
   flex-direction: column;
@@ -393,17 +470,34 @@ defineExpose({ reset });
   gap: 14px;
 }
 
-.slot-picker {
+.precheck-type-hint {
   display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.precheck-intro {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.08);
+  color: #1e40af;
+  font-size: 13px;
+}
+
+.time-input-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
   gap: 10px;
 }
 
-.weekday-select {
-  width: 110px;
+.time-input-row__time {
+  width: 100%;
 }
 
-.time-select {
-  flex: 1;
+.time-input-row__suffix {
+  width: 100%;
 }
 
 .toolbar {

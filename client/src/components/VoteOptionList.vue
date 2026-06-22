@@ -8,7 +8,7 @@
       <el-card v-for="item in sortedOptions" :key="item.id" shadow="never">
         <div class="detail-header">
           <div>
-            <h3>{{ item.time }}</h3>
+            <h3>{{ item.label || item.time }}</h3>
             <div class="muted">票数：{{ item.votes }}</div>
           </div>
           <el-button type="primary" @click="$emit('vote', item.id)">

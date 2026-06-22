@@ -7,6 +7,9 @@
           <div class="sidebar__brand-text">
             <h1 v-if="!store.sidebarCollapsed">通用在线投票管理系统</h1>
           </div>
+          <button class="sidebar__collapse-btn" :aria-label="store.sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'" @click="store.toggleSidebar">
+            <span class="sidebar__collapse-icon" :class="{ 'is-collapsed': store.sidebarCollapsed }">❮</span>
+          </button>
         </div>
       </div>
       <div class="sidebar__menu">
@@ -99,3 +102,44 @@ const currentTitle = computed(() => {
 
 const shareText = computed(() => (typeof window !== 'undefined' && (route.name === 'join' || route.name === 'rank') ? window.location.href : ''));
 </script>
+
+<style scoped>
+.sidebar__brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sidebar__collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: #3b82f6;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sidebar__collapse-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.3);
+}
+
+.sidebar__collapse-icon {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.sidebar__collapse-icon.is-collapsed {
+  transform: rotate(180deg);
+}
+</style>

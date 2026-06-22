@@ -3,10 +3,14 @@
     <header class="rank-visual-card__header rank-visual-card__header--luxury">
       <div>
         <h2 class="rank-visual-card__title rank-visual-card__title--luxury">投票结果可视化</h2>
+        <p class="rank-visual-card__subtitle">{{ voteTypeMeta.description }}</p>
       </div>
-      <el-tag v-if="activeLabel" type="success" effect="dark" class="rank-active-tag">
-        当前选中投票：{{ activeLabel }}
-      </el-tag>
+      <div class="rank-tags">
+        <el-tag v-if="voteTypeMeta.badge" effect="light">{{ voteTypeMeta.badge }}</el-tag>
+        <el-tag v-if="activeLabel" type="success" effect="dark" class="rank-active-tag">
+          当前选中投票：{{ activeLabel }}
+        </el-tag>
+      </div>
     </header>
 
     <section class="rank-metrics">
@@ -22,7 +26,10 @@
 
     <section class="rank-list-panel rank-list-panel--luxury">
       <div class="section-title">
-        <h3 class="rank-list-panel__title">投票排行</h3>
+        <div>
+          <h3 class="rank-list-panel__title">投票排行</h3>
+          <p class="rank-list-panel__subtitle">{{ voteTypeMeta.rankHint }}</p>
+        </div>
       </div>
       <div class="rank-list">
         <div
@@ -59,6 +66,15 @@ const props = defineProps({
 const chartRef = ref();
 let chart;
 
+const voteTypeMeta = computed(() => {
+  const type = props.vote?.voteType || 'text-single';
+  return {
+    time: { description: '时间类投票会优先按时间候选项展示，结果更偏向档期对比。', badge: '时间类', rankHint: '按票数比较时间候选项，适合看档期/时段优先级。' },
+    'text-single': { description: '单选投票会直接展示每个选项的票数排名。', badge: '单选', rankHint: '按票数直接排行，第一名就是当前最优选。' },
+    'text-multi': { description: '多选投票更适合看多个候选项同时入选的趋势。', badge: '多选', rankHint: '多选场景不只看第一名，也要关注前几名的聚集度。' }
+  }[type];
+});
+
 const rankedOptions = computed(() => {
   const list = props.vote?.options ? [...props.vote.options] : [];
   return list.sort((a, b) => {
@@ -79,8 +95,8 @@ const avgVotes = computed(() => (rankedOptions.value.length ? (totalVotes.value 
 
 const metrics = computed(() => [
   { label: '总参与人数', value: `${props.vote?.participants || 0} 人` },
-  { label: '最高得票', value: `${maxVotes.value} 票` },
-  { label: '平均票数', value: `${avgVotes.value} 票` },
+  { label: props.vote?.voteType === 'text-multi' ? '入选热度' : '最高得票', value: `${maxVotes.value} 票` },
+  { label: props.vote?.voteType === 'time' ? '平均时段票数' : '平均票数', value: `${avgVotes.value} 票` },
   { label: '当前领先', value: topLabel.value }
 ]);
 
@@ -95,6 +111,7 @@ const renderChart = () => {
   if (!chart || !props.vote) return;
   const options = [...(props.vote.options || [])];
   const total = Math.max(1, totalVotes.value);
+  const isMulti = props.vote?.voteType === 'text-multi';
 
   chart.setOption({
     animationDuration: 800,
@@ -150,7 +167,7 @@ const renderChart = () => {
     },
     series: [
       {
-        name: '票数',
+        name: isMulti ? '多选票数' : '票数',
         type: 'bar',
         barWidth: 36,
         barMaxWidth: 48,

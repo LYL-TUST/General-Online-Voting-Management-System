@@ -84,50 +84,60 @@ const copyShareLink = async () => {
 const handleSubmit = async (form) => {
   const payload = {
     topic: form.title,
-    options: form.options.slice(0, 3).map((item) => item.label.trim())
+    options: form.options.map((item) => item.label || item.timeValue || '').map((item) => String(item).trim()).filter(Boolean)
   };
 
-  if (payload.options.some((item) => !item)) {
-    ElMessage.warning('请先填完 3 个候选时间后再提交');
+  if (payload.options.length !== form.options.length) {
+    ElMessage.warning(`请先填完 ${form.options.length} 个投票选项后再提交`);
     return;
   }
 
-  if (form.deadlineAt) {
-    await ElMessageBox.confirm('你设置了投票截止时间，提交后将进入自动关闭规则，是否继续？', '二次确认', {
-      confirmButtonText: '继续提交',
-      cancelButtonText: '取消',
-      type: 'warning'
-    });
+  if (payload.options.length < 3) {
+    ElMessage.warning('至少需要 3 个有效选项才能创建投票');
+    return;
   }
 
-  const { data } = await http.post('/votes', payload);
-  createdVoteId.value = data.voteId;
-  successText.value = `投票创建成功，ID：${data.voteId}`;
-  createdVote.title = form.title;
-  createdVote.deadlineAt = form.deadlineAt;
-  createdVote.participationRuleText = form.participationRule === 'once' ? '每人仅可投一次' : '允许重复投票';
-  createdVote.voteTypeText = {
-    time: '时间类投票',
-    'text-single': '文本选项单选',
-    'text-multi': '文本选项多选'
-  }[form.voteType] || '文本选项单选';
-  createdVote.options = form.options.map((item, index) => ({
-    id: index + 1,
-    label: item.label.trim(),
-    note: item.note
-  }));
-  store.addCreatedVote({
-    id: data.voteId,
-    title: form.title,
-    description: form.description,
-    deadlineAt: form.deadlineAt,
-    participationRule: form.participationRule,
-    voteType: form.voteType,
-    options: createdVote.options,
-    createdAt: new Date().toISOString(),
-    participants: 0
-  });
-  dialogVisible.value = true;
+  try {
+    if (form.deadlineAt) {
+      await ElMessageBox.confirm('你设置了投票截止时间，提交后将进入自动关闭规则，是否继续？', '二次确认', {
+        confirmButtonText: '继续提交',
+        cancelButtonText: '取消',
+        type: 'warning'
+      });
+    }
+
+    const { data } = await http.post('/votes', payload);
+    createdVoteId.value = data.voteId;
+    successText.value = `投票创建成功，ID：${data.voteId}`;
+    createdVote.title = form.title;
+    createdVote.deadlineAt = form.deadlineAt;
+    createdVote.participationRuleText = form.participationRule === 'once' ? '每人仅可投一次' : '允许重复投票';
+    createdVote.voteTypeText = {
+      time: '时间类投票',
+      'text-single': '文本选项单选',
+      'text-multi': '文本选项多选'
+    }[form.voteType] || '文本选项单选';
+    createdVote.options = form.options.map((item, index) => ({
+      id: index + 1,
+      label: (item.label || item.timeValue || '').trim(),
+      time: (item.label || item.timeValue || '').trim(),
+      note: item.note
+    }));
+    store.addCreatedVote({
+      id: data.voteId,
+      title: form.title,
+      description: form.description,
+      deadlineAt: form.deadlineAt,
+      participationRule: form.participationRule,
+      voteType: form.voteType,
+      options: createdVote.options,
+      createdAt: new Date().toISOString(),
+      participants: 0
+    });
+    dialogVisible.value = true;
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') return;
+  }
 };
 
 const goDetail = () => router.push(`/vote/${createdVoteId.value}`);

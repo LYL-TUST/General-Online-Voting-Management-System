@@ -11,7 +11,7 @@ const votes = new Map();
 
 const now = () => new Date().toISOString();
 const calcParticipants = (options) => options.reduce((sum, item) => sum + item.votes, 0);
-const normalizeOptions = (options) => options.map((time, index) => ({ id: index + 1, time: String(time).trim(), votes: 0 }));
+const normalizeOptions = (options) => options.map((time, index) => ({ id: index + 1, time: String(time).trim(), label: String(time).trim(), votes: 0 }));
 const serializeVote = (vote) => ({ ...vote, participants: calcParticipants(vote.options) });
 
 app.get('/api/health', (_req, res) => res.json({ success: true, message: 'ok' }));
@@ -19,8 +19,8 @@ app.get('/api/health', (_req, res) => res.json({ success: true, message: 'ok' })
 app.post('/api/votes', (req, res) => {
   const { topic, options } = req.body || {};
   if (!topic?.trim()) return res.status(400).json({ success: false, message: '会议主题不能为空' });
-  if (!Array.isArray(options) || options.length !== 3 || options.some((item) => !String(item || '').trim())) {
-    return res.status(400).json({ success: false, message: '3个候选时间都必须填写' });
+  if (!Array.isArray(options) || options.length < 3 || options.some((item) => !String(item || '').trim())) {
+    return res.status(400).json({ success: false, message: '至少需要填写 3 个候选项' });
   }
   const id = uuidv4().replace(/-/g, '').slice(0, 8);
   const vote = { id, topic: topic.trim(), options: normalizeOptions(options), createdAt: now(), updatedAt: now() };
