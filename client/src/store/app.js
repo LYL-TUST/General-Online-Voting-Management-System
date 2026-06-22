@@ -53,11 +53,33 @@ export const useAppStore = defineStore('app', {
     },
     setCurrentVote(vote) {
       this.currentVote = vote;
+      this.syncCreatedVote(vote);
       this.persist();
     },
     addCreatedVote(vote) {
-      const next = { ...vote, createdAt: vote.createdAt || new Date().toISOString() };
+      const next = {
+        ...vote,
+        createdAt: vote.createdAt || new Date().toISOString(),
+        participants: vote.participants ?? 0,
+        options: (vote.options || []).map((item, index) => ({
+          id: item.id ?? index + 1,
+          time: item.time,
+          votes: item.votes ?? 0
+        }))
+      };
       this.createdVotes = [next, ...this.createdVotes.filter((item) => item.id !== next.id)];
+      this.persist();
+    },
+    syncCreatedVote(vote) {
+      if (!vote?.id) return;
+      const next = {
+        ...vote,
+        participants: vote.participants ?? (vote.options || []).reduce((sum, item) => sum + (item.votes || 0), 0)
+      };
+      const index = this.createdVotes.findIndex((item) => item.id === vote.id);
+      if (index >= 0) {
+        this.createdVotes.splice(index, 1, next);
+      }
       this.persist();
     },
     removeCreatedVote(voteId) {

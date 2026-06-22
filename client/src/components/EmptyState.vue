@@ -6,6 +6,7 @@
       </template>
       <template #default>
         <div v-if="title" style="font-weight: 600; margin-bottom: 6px;">{{ title }}</div>
+        <slot />
       </template>
     </el-empty>
   </div>
