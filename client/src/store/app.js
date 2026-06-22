@@ -63,7 +63,8 @@ export const useAppStore = defineStore('app', {
         participants: vote.participants ?? 0,
         options: (vote.options || []).map((item, index) => ({
           id: item.id ?? index + 1,
-          time: item.time,
+          label: item.label ?? item.time ?? '',
+          note: item.note ?? '',
           votes: item.votes ?? 0
         }))
       };

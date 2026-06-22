@@ -5,7 +5,7 @@
     </div>
     <el-table :data="sortedOptions" border style="width: 100%">
       <el-table-column type="index" label="#" width="80" />
-      <el-table-column prop="time" label="候选时间" />
+      <el-table-column prop="label" label="候选项" />
       <el-table-column prop="votes" label="票数" width="120" />
     </el-table>
   </section>
@@ -16,6 +16,6 @@ import { computed } from 'vue';
 const props = defineProps({ vote: Object });
 const sortedOptions = computed(() => {
   if (!props.vote) return [];
-  return [...props.vote.options].sort((a, b) => (b.votes - a.votes) || (a.id - b.id));
+  return [...(props.vote.options || [])].sort((a, b) => (b.votes - a.votes) || (a.id - b.id));
 });
 </script>

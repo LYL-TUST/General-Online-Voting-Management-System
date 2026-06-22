@@ -5,7 +5,7 @@
       <div class="sidebar__brand">
         <div class="sidebar__brand-row">
           <div class="sidebar__brand-text">
-            <h1 v-if="!store.sidebarCollapsed">会议投票系统</h1>
+            <h1 v-if="!store.sidebarCollapsed">通用在线投票管理系统</h1>
           </div>
         </div>
       </div>
@@ -58,7 +58,7 @@
         <router-view />
       </main>
 
-      <footer class="main__footer">© 2026 会议投票系统</footer>
+      <footer class="main__footer">© 2026 通用在线投票管理系统</footer>
     </section>
   </div>
 </template>
@@ -94,7 +94,7 @@ const currentTitle = computed(() => {
     'my-records': '我的投票记录',
     guide: '使用说明'
   };
-  return map[route.name] || '会议投票系统';
+  return map[route.name] || '通用在线投票管理系统';
 });
 
 const shareText = computed(() => (typeof window !== 'undefined' && (route.name === 'join' || route.name === 'rank') ? window.location.href : ''));

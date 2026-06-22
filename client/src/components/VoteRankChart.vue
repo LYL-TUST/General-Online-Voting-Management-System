@@ -34,7 +34,7 @@
           <div class="rank-list-item__left">
             <span class="rank-list-item__index">{{ index + 1 }}</span>
             <div>
-              <div class="rank-list-item__time">{{ item.time }}</div>
+              <div class="rank-list-item__time">{{ item.label }}</div>
               <div class="muted rank-list-item__meta">{{ item.votes }} 票 · {{ votePercent(item.votes) }}%</div>
             </div>
           </div>
@@ -69,19 +69,19 @@ const rankedOptions = computed(() => {
 
 const activeLabel = computed(() => {
   const option = props.vote?.options?.find((item) => item.id === props.activeOptionId);
-  return option ? option.time : '全部选项';
+  return option ? option.label : '全部选项';
 });
 
 const totalVotes = computed(() => rankedOptions.value.reduce((sum, item) => sum + item.votes, 0));
 const maxVotes = computed(() => Math.max(0, ...rankedOptions.value.map((item) => item.votes)));
-const topTime = computed(() => rankedOptions.value[0]?.time || '暂无');
+const topLabel = computed(() => rankedOptions.value[0]?.label || '暂无');
 const avgVotes = computed(() => (rankedOptions.value.length ? (totalVotes.value / rankedOptions.value.length).toFixed(1) : '0.0'));
 
 const metrics = computed(() => [
   { label: '总参与人数', value: `${props.vote?.participants || 0} 人` },
   { label: '最高得票', value: `${maxVotes.value} 票` },
   { label: '平均票数', value: `${avgVotes.value} 票` },
-  { label: '最优时间', value: topTime.value }
+  { label: '当前领先', value: topLabel.value }
 ]);
 
 const votePercent = (votes) => {
@@ -107,7 +107,7 @@ const renderChart = () => {
       itemWidth: 12,
       itemHeight: 12,
       textStyle: { color: '#64748b', fontSize: 12 },
-      data: options.map((item) => item.time)
+      data: options.map((item) => item.label)
     },
     tooltip: {
       trigger: 'axis',
@@ -124,12 +124,12 @@ const renderChart = () => {
         if (!p) return '';
         const item = options[p.dataIndex];
         const percent = ((item.votes / total) * 100).toFixed(1);
-        return [`<div style="font-weight:600;margin-bottom:6px;">${item.time}</div>`, `得票数：<b>${item.votes}</b> 票`, `占总票数：<b>${percent}%</b>`].join('<br/>');
+        return [`<div style="font-weight:600;margin-bottom:6px;">${item.label}</div>`, `得票数：<b>${item.votes}</b> 票`, `占总票数：<b>${percent}%</b>`].join('<br/>');
       }
     },
     xAxis: {
       type: 'category',
-      data: options.map((item) => item.time),
+      data: options.map((item) => item.label),
       axisTick: { show: false },
       axisLine: { lineStyle: { color: '#e5e7eb' } },
       axisLabel: {
@@ -192,14 +192,21 @@ const renderChart = () => {
   });
 };
 
+const resizeChart = () => chart?.resize();
+
 onMounted(() => {
   chart = echarts.init(chartRef.value);
   renderChart();
+  window.addEventListener('resize', resizeChart);
 });
 
-watch(() => [props.vote, props.activeOptionId], renderChart, { deep: true });
+watch(() => [props.vote, props.activeOptionId], () => {
+  renderChart();
+  resizeChart();
+}, { deep: true });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeChart);
   chart?.dispose();
 });
 </script>
